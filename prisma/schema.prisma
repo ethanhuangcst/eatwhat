@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 用户
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  image         String?
+  preferences   UserPreference?
+  userRecipes   UserRecipe[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+// 用户喜好
+model UserPreference {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dietaryRestrictions String[] // 饮食限制：素食、无麸质等
+  favoriteIngredients String[] // 喜欢的食材
+  dislikedIngredients String[] // 不喜欢的食材
+  favoriteCuisines    String[] // 喜欢的菜系
+  spiceLevel          String   // 辣度偏好：mild/medium/hot
+  cookingTime         Int      // 期望烹饪时间（分钟）
+  servings            Int      // 人数
+  budgetLevel         String   // 预算等级：low/medium/high
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// 菜谱
+model Recipe {
+  id              String   @id @default(cuid())
+  name            String
+  description     String
+  ingredients     Json     // 食材列表
+  instructions    Json     // 步骤
+  prepTime        Int      // 准备时间
+  cookTime        Int      // 烹饪时间
+  servings        Int      // 份量
+  difficulty      String   // 难度：easy/medium/hard
+  cuisine         String   // 菜系
+  tags            String[] // 标签
+  calories        Int?     // 卡路里
+  imageUrl        String?
+  source          String   // 来源：ai/user
+  createdBy       String?  // 创建者 ID
+  userRecipes     UserRecipe[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 用户菜谱（收藏/计划）
+model UserRecipe {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipeId      String
+  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  type          String    // 类型：favorite/plan/history
+  scheduledDate DateTime? // 计划日期
+  rating        Int?      // 评分
+  note          String?   // 备注
+  createdAt     DateTime  @default(now())
+
+  @@unique([userId, recipeId, type])
+}
+
+// AI 生成历史
+model GenerationHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  prompt     String   // 提示词
+  response   Json     // AI 响应
+  tokensUsed Int      // 消耗 token 数
+  createdAt  DateTime @default(now())
+}
